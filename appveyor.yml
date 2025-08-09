@@ -1,0 +1,9 @@
+image: Ubuntu2004
+
+install:
+  - pip install yt-dlp requests
+
+build_script:
+  - python test_download.py
+
+test: off
