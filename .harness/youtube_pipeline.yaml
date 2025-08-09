@@ -1,0 +1,63 @@
+pipeline:
+  name: youtube-downloader
+  identifier: youtube_downloader
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: pop
+        repoName: test
+        build: <+input>
+  stages:
+    - stage:
+        name: Download Videos
+        identifier: Download_Videos
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Install Dependencies
+                  identifier: Install_Dependencies
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "Installing Python and dependencies..."
+                      apt-get update
+                      apt-get install -y python3 python3-pip ffmpeg
+                      pip3 install yt-dlp
+                      echo "Dependencies installed!"
+              - step:
+                  type: Run
+                  name: Download YouTube Videos
+                  identifier: Download_YouTube_Videos
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "Starting YouTube download..."
+                      python3 youtube_downloader.py
+                    envVariables:
+                      CHANNEL_URL: <+input>
+                      MAX_DOWNLOADS: "5"
+              - step:
+                  type: Run
+                  name: Show Results
+                  identifier: Show_Results
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "Download completed!"
+                      echo "Files in download folder:"
+                      ls -la downloaded_videos/ || echo "No videos found"
+                      echo "Statistics:"
+                      cat download_stats.json || echo "No stats available"
