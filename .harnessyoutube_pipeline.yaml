@@ -1,0 +1,75 @@
+pipeline:
+  name: YouTube Video Downloader
+  identifier: youtube_downloader
+  projectIdentifier: Default_Project
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.Github_OAuth_1234567890  # Your GitHub connector
+        repoName: jamekhalid77/test
+        build: <+input>
+  stages:
+    - stage:
+        name: Download Videos
+        identifier: download_videos
+        type: CI
+        spec:
+          cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Setup Environment
+                  identifier: setup_env
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "🔧 Setting up environment..."
+                      apt-get update -qq
+                      apt-get install -y python3-pip ffmpeg
+                      pip3 install --upgrade pip
+                      pip3 install yt-dlp
+                      echo "✅ Environment ready!"
+                    
+              - step:
+                  type: Run
+                  name: Download YouTube Videos
+                  identifier: download_videos
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "🎬 Starting YouTube downloads..."
+                      python3 youtube_downloader.py
+                    envVariables:
+                      CHANNEL_URL: <+input>  # Will prompt for channel URL
+                      MAX_DOWNLOADS: "5"     # Download 5 videos per run
+                    
+              - step:
+                  type: Run
+                  name: List Downloaded Files
+                  identifier: list_files
+                  spec:
+                    shell: Bash
+                    command: |
+                      echo "📁 Downloaded files:"
+                      ls -lah downloaded_videos/ || echo "No videos downloaded"
+                      echo ""
+                      echo "📊 Download statistics:"
+                      cat download_stats.json || echo "No stats available"
+                    
+          sharedPaths:
+            - /downloaded_videos
+          
+          caching:
+            enabled: true
+            paths:
+              - downloaded_videos
+            key: youtube-videos-{{ checksum "youtube_downloader.py" }}
